@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mysa — Payments (FC View)</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f0; font-size: 13px; height: 100vh; overflow: hidden; }
+.app { display: flex; height: 100vh; }
+
+/* ── NAV ── */
+.nav { width: 210px; background: #1a2420; flex-shrink: 0; display: flex; flex-direction: column; overflow-y: auto; z-index: 10; }
+.nav-logo { padding: 18px 16px 14px; border-bottom: 1px solid #2a3830; }
+.nav-logo-text { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+.nav-logo-text span { color: #4ade80; }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 16px; cursor: pointer; color: #7a9a88; font-size: 12.5px; border-left: 2px solid transparent; transition: background 0.15s, color 0.15s; user-select: none; }
+.nav-item:hover { background: #243028; color: #cde8d8; }
+.nav-item.active { color: #e8f5ee; background: #1e2e28; }
+.nav-item.sub { padding-left: 36px; font-size: 12px; color: #5a7a68; }
+.nav-item.sub:hover { color: #aed8be; }
+.nav-item.sub.active { color: #4ade80; border-left-color: #4ade80; background: #182820; font-weight: 500; }
+.nav-expand { margin-left: auto; opacity: 0.4; transition: transform 0.2s; }
+.nav-expand.open { transform: rotate(180deg); }
+.nav-divider { border: none; border-top: 1px solid #232e28; margin: 4px 0; }
+.nav-bottom { margin-top: auto; padding: 12px 16px; border-top: 1px solid #232e28; }
+.nav-bottom-item { display: flex; align-items: center; gap: 8px; color: #5a7a68; font-size: 12px; padding: 5px 0; cursor: pointer; }
+.nav-bottom-item:hover { color: #aed8be; }
+
+/* ── MAIN ── */
+.main { flex: 1; display: flex; flex-direction: column; background: #fff; overflow: hidden; min-width: 0; }
+.content { flex: 1; overflow-y: auto; min-width: 0; }
+.content::-webkit-scrollbar { width: 5px; }
+.content::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 3px; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* ── ANNOUNCE / TOPBAR ── */
+.announce-bar { background: #fffbeb; border-bottom: 1px solid #fde68a; padding: 7px 20px; font-size: 11.5px; color: #92400e; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.topbar { background: #fff; border-bottom: 1px solid #e8e8e8; padding: 11px 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.page-title { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.icon-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #e0e0e0; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s; }
+.icon-btn:hover { background: #f5f5f5; }
+.av-top { width: 30px; height: 30px; border-radius: 50%; background: #1a2420; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #4ade80; }
+
+/* ── BANK CARDS ── */
+.bank-cards-row { display: flex; gap: 12px; padding: 16px 20px 0; flex-shrink: 0; }
+.bank-card { border: 1.5px solid #e0e0e0; border-radius: 10px; padding: 12px 16px; min-width: 210px; cursor: pointer; background: #fff; transition: border-color 0.15s, background 0.15s; }
+.bank-card.selected { border-color: #16a34a; background: #f0faf4; }
+.bank-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.check-circle { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid #ccc; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
+.check-circle.on { background: #16a34a; border-color: #16a34a; }
+.bank-card-name { font-size: 12px; color: #666; }
+.copy-btn { margin-left: 4px; background: none; border: none; cursor: pointer; opacity: 0.4; padding: 0; }
+.copy-btn:hover { opacity: 0.7; }
+.bank-card-amount { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 5px; }
+.bank-card-refresh { font-size: 10px; color: #aaa; display: flex; align-items: center; gap: 4px; }
+
+/* ── TABS ── */
+.tabs-row { display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #e8e8e8; margin-top: 14px; flex-shrink: 0; }
+.tabs { display: flex; }
+.tab { font-size: 12px; color: #888; padding: 10px 14px; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; display: flex; align-items: center; gap: 5px; transition: color 0.15s; }
+.tab:hover { color: #444; }
+.tab.active { color: #16a34a; border-bottom-color: #16a34a; font-weight: 500; }
+.tab-badge { background: #e8e8e8; color: #666; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; }
+.tab.active .tab-badge { background: #dcfce7; color: #15803d; }
+.tab-right { display: flex; gap: 8px; padding: 8px 0; }
+.dd-btn { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 5px 12px; font-size: 12px; color: #555; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+.dd-btn:hover { background: #f5f5f5; }
+
+/* ── FILTER CHIPS ── */
+.filter-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px; border-bottom: 1px solid #f0f0f0; flex-shrink: 0; flex-wrap: wrap; gap: 6px; }
+.filter-left { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.filter-label { font-size: 12px; color: #888; }
+.chip { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 4px 10px; font-size: 11.5px; color: #555; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.15s; white-space: nowrap; }
+.chip:hover { background: #f5f5f5; }
+.chip.active { background: #f0faf4; border-color: #86efac; color: #15803d; }
+.sort-label { font-size: 12px; color: #888; cursor: pointer; white-space: nowrap; }
+
+/* ── SUMMARY ── */
+.summary-row { display: flex; gap: 0; padding: 10px 20px; border-bottom: 1px solid #f0f0f0; flex-shrink: 0; }
+.summary-item { display: flex; flex-direction: column; gap: 2px; padding-right: 24px; margin-right: 24px; border-right: 1px solid #e8e8e8; }
+.summary-item:last-child { border-right: none; }
+.sum-label { font-size: 11px; color: #aaa; border-left: 2px solid #d0d0d0; padding-left: 8px; }
+.sum-label.amber { border-left-color: #f59e0b; }
+.sum-label.green { border-left-color: #16a34a; }
+.sum-value { font-size: 18px; font-weight: 600; color: #1a1a1a; padding-left: 10px; }
+
+/* ── TABLE ── */
+.table-wrap { padding: 0 0 60px; overflow-x: auto; }
+.table-wrap table { width: max-content; min-width: 100%; border-collapse: collapse; }
+thead th { padding: 8px 12px; text-align: left; font-size: 10px; font-weight: 600; color: #999; letter-spacing: 0.07em; text-transform: uppercase; border-bottom: 1px solid #f0f0f0; background: #fafafa; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+thead th.col-sticky-left { position: sticky; left: 0; z-index: 3; background: #fafafa; box-shadow: 2px 0 5px rgba(0,0,0,0.06); }
+thead th.col-sticky-right { position: sticky; right: 0; z-index: 3; background: #fafafa; box-shadow: -2px 0 5px rgba(0,0,0,0.06); }
+tbody tr { border-bottom: 1px solid #f5f5f5; transition: background 0.1s; cursor: pointer; }
+tbody tr:hover { background: #f9fffc; }
+tbody tr:hover td.col-sticky-left,
+tbody tr:hover td.col-sticky-right { background: #f9fffc; }
+tbody tr.active-row { background: #f0faf4; }
+tbody tr.new-row { background: #f0faf4; }
+tbody tr.new-row:hover { background: #e8f7ef; }
+tbody tr.new-row:hover td.col-sticky-left,
+tbody tr.new-row:hover td.col-sticky-right { background: #e8f7ef; }
+td { padding: 10px 12px; vertical-align: middle; white-space: nowrap; }
+td.col-sticky-left { position: sticky; left: 0; background: #fff; z-index: 1; box-shadow: 2px 0 5px rgba(0,0,0,0.06); }
+td.col-sticky-right { position: sticky; right: 0; background: #fff; z-index: 1; box-shadow: -2px 0 5px rgba(0,0,0,0.06); }
+tbody tr.new-row td.col-sticky-left,
+tbody tr.new-row td.col-sticky-right { background: #f0faf4; }
+tbody tr.active-row td.col-sticky-left,
+tbody tr.active-row td.col-sticky-right { background: #f0faf4; }
+.bene-cell { display: flex; align-items: center; gap: 8px; position: relative; }
+.av-sm { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.bene-name { font-size: 12.5px; color: #1a1a1a; font-weight: 500; }
+.bene-sub { font-size: 10px; color: #aaa; margin-top: 1px; }
+.new-badge { background: #dcfce7; color: #15803d; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
+.row-hint { display: none; position: absolute; left: 110px; top: 50%; transform: translateY(-50%); background: #1a1a1a; color: #fff; font-size: 11px; padding: 4px 9px; border-radius: 5px; white-space: nowrap; pointer-events: none; z-index: 5; }
+tbody tr:hover .row-hint { display: block; }
+
+/* status pills */
+.pill { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+.pill-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.pill-green { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+.pill-purple { background: #faf5ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+.pill-amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.pill-red { font-size: 12px; color: #dc2626; font-weight: 500; }
+
+/* action buttons */
+.act-cell { display: flex; align-items: center; gap: 4px; }
+.rib { width: 26px; height: 26px; border-radius: 5px; background: #fff; border: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; color: #999; transition: all 0.15s; }
+.rib:hover { background: #fef2f2; border-color: #fca5a5; color: #dc2626; }
+.rib-tip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 5px; white-space: nowrap; pointer-events: none; z-index: 20; }
+.rib-tip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: #1a1a1a; }
+.rib:hover .rib-tip { display: block; }
+.dots { color: #ccc; font-size: 16px; cursor: pointer; padding: 0 3px; user-select: none; letter-spacing: 1px; }
+.dots:hover { color: #888; }
+.green-btn { width: 26px; height: 26px; border-radius: 5px; background: #16a34a; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; flex-shrink: 0; transition: background 0.15s; }
+.green-btn:hover { background: #15803d; }
+.tag-badge { display: inline-flex; align-items: center; background: #f1f5f9; color: #475569; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
+
+/* ── EMPTY STATE ── */
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; }
+.empty-icon { width: 64px; height: 64px; border-radius: 50%; background: #f5f5f5; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+.empty-title { font-size: 14px; color: #888; font-weight: 500; margin-bottom: 4px; }
+.empty-sub { font-size: 12px; color: #bbb; text-align: center; max-width: 280px; }
+
+/* ── SIDE PANEL ── */
+.side-overlay { display: none; position: fixed; inset: 0; z-index: 40; }
+.side-overlay.open { display: block; }
+.side-panel { position: fixed; top: 0; right: 0; width: 480px; height: 100vh; background: #fff; border-left: 1px solid #e8e8e8; z-index: 50; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.25s cubic-bezier(0.4,0,0.2,1); box-shadow: -4px 0 24px rgba(0,0,0,0.08); }
+.side-panel.open { transform: translateX(0); }
+.sp-hdr { padding: 16px 20px 12px; border-bottom: 1px solid #f0f0f0; flex-shrink: 0; }
+.sp-hdr-top { display: flex; align-items: flex-start; justify-content: space-between; }
+.sp-title-row { display: flex; align-items: center; gap: 10px; }
+.sp-av { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.sp-name { font-size: 16px; font-weight: 700; color: #1a1a1a; }
+.sp-bank { font-size: 12px; color: #888; display: flex; align-items: center; gap: 5px; margin-top: 4px; margin-left: 46px; }
+.sp-verified { width: 14px; height: 14px; border-radius: 50%; background: #16a34a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sp-hdr-acts { display: flex; align-items: center; gap: 6px; }
+.sp-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e8e8e8; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #888; transition: background 0.15s; }
+.sp-btn:hover { background: #f5f5f5; }
+.sp-close { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e8e8e8; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; font-size: 15px; line-height: 1; transition: background 0.15s; }
+.sp-close:hover { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+.sp-tabs-row { display: flex; padding: 0 20px; border-bottom: 1px solid #e8e8e8; flex-shrink: 0; }
+.sp-tab { font-size: 12px; color: #888; padding: 10px 12px; cursor: pointer; border-bottom: 2px solid transparent; }
+.sp-tab:hover { color: #444; }
+.sp-tab.active { color: #16a34a; border-bottom-color: #16a34a; font-weight: 500; }
+.sp-body { flex: 1; overflow-y: auto; padding: 16px 20px 80px; }
+.sp-body::-webkit-scrollbar { width: 4px; }
+.sp-body::-webkit-scrollbar-thumb { background: #e8e8e8; border-radius: 2px; }
+.sp-status-card { border: 1px solid #e8e8e8; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+.sp-status-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.sp-status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.sp-view-bill { background: #fff; border: 1px solid #16a34a; color: #16a34a; border-radius: 6px; padding: 5px 12px; font-size: 11px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 5px; font-family: inherit; }
+.sp-view-bill:hover { background: #f0faf4; }
+/* timeline */
+.tl-steps-row { display: flex; align-items: flex-start; width: 100%; }
+.tl-step { display: flex; flex-direction: column; align-items: center; flex: 1; }
+.tl-dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #e0e0e0; background: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.tl-dot.done { background: #16a34a; border-color: #16a34a; }
+.tl-dot.curr { background: #fff; border-color: #2563eb; box-shadow: 0 0 0 3px #dbeafe; }
+.tl-dot-inner { width: 8px; height: 8px; border-radius: 50%; background: #2563eb; }
+.tl-conn { flex: 1; height: 2px; margin-top: 9px; }
+.tl-conn.done { background: #16a34a; }
+.tl-conn.pend { background: #e0e0e0; }
+.tl-lbl { font-size: 10px; color: #999; margin-top: 5px; text-align: center; line-height: 1.3; }
+.tl-lbl.done { color: #16a34a; font-weight: 500; }
+.tl-lbl.curr { color: #2563eb; font-weight: 500; }
+.tl-sub { font-size: 9px; color: #bbb; text-align: center; margin-top: 1px; }
+.tl-next { background: #f0faf4; border: 1px solid #bbf7d0; border-radius: 7px; padding: 10px 12px; margin-top: 12px; }
+.tl-next-lbl { font-size: 11px; color: #15803d; font-weight: 600; margin-bottom: 3px; }
+.tl-next-txt { font-size: 11.5px; color: #374151; line-height: 1.5; }
+.sp-sec-title { font-size: 13px; font-weight: 600; color: #1a1a1a; margin: 18px 0 10px; }
+.sp-sum-card { border: 1px solid #e8e8e8; border-radius: 10px; padding: 14px 16px; }
+.sp-amt-lbl { font-size: 10px; color: #aaa; margin-bottom: 4px; }
+.sp-amt-val { font-size: 22px; font-weight: 700; color: #1a1a1a; margin-bottom: 14px; }
+.sp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+.sp-fl { font-size: 10px; color: #aaa; margin-bottom: 2px; letter-spacing: 0.03em; }
+.sp-fv { font-size: 12.5px; color: #1a1a1a; font-weight: 500; line-height: 1.3; }
+.sp-fv a { color: #16a34a; text-decoration: none; }
+.sp-fv a:hover { text-decoration: underline; }
+.bank-tag { display: flex; align-items: center; gap: 5px; }
+.bank-ic { width: 16px; height: 16px; border-radius: 3px; background: #e8e8e8; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #888; font-weight: 700; flex-shrink: 0; }
+.sp-footer { position: absolute; bottom: 0; left: 0; right: 0; padding: 12px 20px; background: #fff; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; }
+.sp-rej-btn { background: #fff; border: 1px solid #fca5a5; border-radius: 7px; padding: 8px 20px; font-size: 12.5px; color: #dc2626; cursor: pointer; font-weight: 500; font-family: inherit; transition: background 0.15s; }
+.sp-rej-btn:hover { background: #fef2f2; }
+
+/* ── MODAL ── */
+.modal-bd { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; align-items: center; justify-content: center; }
+.modal-bd.open { display: flex; }
+.modal { background: #fff; border-radius: 14px; padding: 24px; width: 400px; max-width: 92vw; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+.modal-hdr { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
+.modal-ttl { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+.modal-x { background: none; border: none; cursor: pointer; color: #aaa; font-size: 18px; line-height: 1; padding: 0; }
+.modal-x:hover { color: #555; }
+.modal-sub { font-size: 12px; color: #888; margin-bottom: 16px; line-height: 1.5; }
+.modal-info { background: #f9f9f9; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; border: 1px solid #f0f0f0; }
+.modal-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; }
+.mk { font-size: 11px; color: #aaa; }
+.mv { font-size: 11.5px; color: #1a1a1a; font-weight: 500; }
+.modal-lbl { font-size: 12px; color: #444; margin-bottom: 6px; font-weight: 500; }
+.modal-lbl span { color: #dc2626; }
+textarea { width: 100%; border: 1px solid #e0e0e0; border-radius: 7px; padding: 9px 11px; font-size: 12px; color: #1a1a1a; resize: vertical; min-height: 80px; font-family: inherit; outline: none; transition: border-color 0.15s; }
+textarea:focus { border-color: #16a34a; }
+.modal-ft { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+.btn { padding: 8px 18px; border-radius: 7px; font-size: 12.5px; font-family: inherit; cursor: pointer; font-weight: 500; transition: background 0.15s; }
+.btn-c { background: #fff; border: 1px solid #ddd; color: #555; }
+.btn-c:hover { background: #f5f5f5; }
+.btn-r { background: #dc2626; border: none; color: #fff; }
+.btn-r:hover:not(:disabled) { background: #b91c1c; }
+.btn-r:disabled { background: #fca5a5; cursor: default; }
+
+/* ── TOAST ── */
+.toast { display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; border-radius: 8px; padding: 11px 18px; font-size: 12.5px; z-index: 200; white-space: nowrap; align-items: center; gap: 9px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+.toast.show { display: flex; animation: fu 0.2s ease; }
+@keyframes fu { from { opacity:0; transform:translateX(-50%) translateY(8px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+
+/* improved timeline — compact */
+.hl-tl { display:flex; align-items:flex-start; width:100%; margin-bottom:2px; }
+.hl-step { display:flex; flex-direction:column; align-items:center; flex:1; }
+.hl-dot { width:16px; height:16px; border-radius:50%; border:1.5px solid #e0e0e0; background:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.hl-dot.done { background:#16a34a; border-color:#16a34a; }
+.hl-dot.curr { background:#fff; border-color:#2563eb; box-shadow:0 0 0 2px #dbeafe; }
+.hl-conn { flex:1; height:1.5px; margin-top:7px; }
+.hl-conn.done { background:#16a34a; }
+.hl-conn.pend { background:#e0e0e0; }
+.hl-lbl { font-size:10px; color:#999; margin-top:4px; text-align:center; line-height:1.3; max-width:56px; }
+.hl-lbl.done { color:#16a34a; font-weight:500; }
+.hl-lbl.curr { color:#2563eb; font-weight:500; }
+.hl-sub { font-size:9px; color:#bbb; text-align:center; margin-top:1px; max-width:56px; }
+
+/* audit card */
+.sp-audit-card { border:1px solid #e8e8e8; border-radius:10px; padding:12px 14px; margin-bottom:14px; }
+
+/* approver pool */
+.pool-row { display:flex; align-items:flex-start; gap:6px; margin-bottom:2px; }
+.pool-lbl { font-size:11px; color:#6b7280; flex-shrink:0; }
+.pool-names { font-size:11px; color:#374151; }
+
+/* audit trail */
+.audit-item { display:flex; align-items:flex-start; gap:8px; padding:8px 0; border-bottom:1px solid #f5f5f5; }
+.audit-item:last-child { border-bottom:none; }
+.audit-dot { width:18px; height:18px; border-radius:50%; background:#16a34a; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+.audit-content { flex:1; }
+.audit-action { font-size:12px; font-weight:500; color:#1a1a1a; }
+.audit-by { font-size:11px; color:#888; }
+.audit-time { font-size:10px; color:#aaa; margin-top:1px; }
+
+/* bill details table */
+.bill-det-card { border:1px solid #e8e8e8; border-radius:8px; overflow:hidden; }
+.bill-det-hdr { display:grid; grid-template-columns:1fr 100px 100px 80px; gap:0; background:#fafafa; border-bottom:1px solid #f0f0f0; }
+.bill-det-hdr span { font-size:10px; font-weight:600; color:#999; letter-spacing:0.07em; text-transform:uppercase; padding:7px 10px; }
+.bill-det-row { display:grid; grid-template-columns:1fr 100px 100px 80px; gap:0; border-bottom:1px solid #f5f5f5; }
+.bill-det-row:last-child { border-bottom:none; }
+.bill-det-row span { font-size:12px; color:#374151; padding:8px 10px; }
+
+/* doc icon */
+.doc-ic { width: 22px; height: 22px; border-radius: 3px; background: #e8f5e9; display: flex; align-items: center; justify-content: center; }
+.doc-ic { width: 22px; height: 22px; border-radius: 3px; background: #e8f5e9; display: flex; align-items: center; justify-content: center; }
+
+/* pending-with cell */
+.pw-cell { display: flex; align-items: center; gap: 0; position: relative; }
+.pw-name { font-size: 12px; color: #374151; font-weight: 500; white-space: nowrap; }
+.pw-more { display: inline-flex; align-items: center; justify-content: center; background: #f1f5f9; color: #475569; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; margin-left: 5px; cursor: default; white-space: nowrap; border: 1px solid #e2e8f0; }
+.pw-tooltip { display: none; position: absolute; top: calc(100% + 6px); left: 0; background: #1a1a1a; color: #fff; font-size: 11px; padding: 8px 10px; border-radius: 7px; white-space: nowrap; z-index: 30; line-height: 1.7; min-width: 130px; }
+.pw-tooltip::before { content: ''; position: absolute; bottom: 100%; left: 14px; border: 5px solid transparent; border-bottom-color: #1a1a1a; }
+.pw-cell:hover .pw-tooltip { display: block; }
+
+/* approval progress dots */
+.ap-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.ap-dots { display: flex; align-items: center; gap: 4px; }
+.ap-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; transition: background 0.15s; }
+.ap-dot.done { background: #16a34a; }
+.ap-dot.curr { background: #2563eb; box-shadow: 0 0 0 2px #dbeafe; }
+.ap-dot.pend { background: #e2e8f0; border: 1px solid #cbd5e1; }
+.ap-label { font-size: 10px; color: #94a3b8; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ── LEFT NAV ── -->
+<nav class="nav">
+  <div class="nav-logo"><div class="nav-logo-text">my<span>sa</span></div></div>
+  <div style="padding:8px 0;">
+    <div class="nav-item" onclick="navTo('home')"><svg width="14" height="14" fill="none" viewBox="0 0 14 14"><rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>Home</div>
+    <div class="nav-item" onclick="navTo('home')"><svg width="14" height="14" fill="none" viewBox="0 0 14 14"><rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M1 5.5h12M4 8.5h2M8 8.5h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Bills</div>
+    <div class="nav-item" onclick="navTo('home')"><svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M7 1C4.8 1 3 2.8 3 5s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zM1 13c0-2.8 2.7-5 6-5s6 2.2 6 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Vendors</div>
+    <div class="nav-item" onclick="navTo('home')"><svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M2 13V6l5-5 5 5v7H9v-4H5v4H2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>Reimbursements</div>
+    <hr class="nav-divider">
+    <div class="nav-item active" id="nav-payments"><svg width="14" height="14" fill="none" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><path d="M4.5 7h5M7 4.5v5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Payments<svg class="nav-expand open" id="navExpandIcon" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4l2.5 2.5L7.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></div>
+    <div class="nav-item sub" id="sub-rtp" onclick="showSection('rtp')">Ready to Pay</div>
+    <div class="nav-item sub" id="sub-inqueue" onclick="showSection('inqueue')">In Queue</div>
+    <div class="nav-item sub active" id="sub-pending" onclick="showSection('pending')">Pending on Others</div>
+    <div class="nav-item sub" id="sub-alltx" onclick="showSection('alltx')">All Transactions</div>
+    <hr class="nav-divider">
+    <div class="nav-item" onclick="navTo('home')"><svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M2 2h10v2.5L8 8v4l-2-1.5V8L2 4.5V2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>Smart Statement</div>
+    <div class="nav-item" onclick="navTo('home')"><svg width="14" height="14" fill="none" viewBox="0 0 14 14"><rect x="1" y="1" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M4 7h6M4 4.5h6M4 9.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Accounting</div>
+    <div class="nav-item" onclick="navTo('home')"><svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M2 11V8l2-2h6l2 2v3H2zM5 11v2h4v-2M7 6V1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Reports<svg class="nav-expand" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4l2.5 2.5L7.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></div>
+    <div class="nav-item" onclick="navTo('home')"><svg width="14" height="14" fill="none" viewBox="0 0 14 14"><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.9 2.9l1.1 1.1M10 10l1.1 1.1M2.9 11.1L4 10M10 4l1.1-1.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Settings<svg class="nav-expand" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4l2.5 2.5L7.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></div>
+  </div>
+  <div class="nav-bottom"><div class="nav-bottom-item"><svg width="12" height="12" fill="none" viewBox="0 0 12 12"><path d="M2 6h8M4 4l-2 2 2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Keep closed</div></div>
+</nav>
+
+<!-- ── MAIN ── -->
+<div class="main">
+  <div class="announce-bar"><svg width="13" height="13" fill="none" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="5.5" stroke="#d97706" stroke-width="1.1"/><path d="M6.5 5.5v4" stroke="#d97706" stroke-width="1.1" stroke-linecap="round"/><circle cx="6.5" cy="3.5" r="0.6" fill="#d97706"/></svg>7PM is the cut-off time for NEFT &amp; RTGS. For faster clearance please choose IMPS (Fast) for payments below ₹5 lakhs</div>
+  <div class="topbar">
+    <div class="page-title" id="pageTitle">Payments</div>
+    <div class="topbar-right">
+      <div class="icon-btn"><svg width="13" height="13" fill="none" viewBox="0 0 13 13"><path d="M11 6.5A4.5 4.5 0 1 1 6.5 2" stroke="#888" stroke-width="1.2" stroke-linecap="round"/><path d="M11 2v4H7" stroke="#888" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="icon-btn"><svg width="13" height="13" fill="none" viewBox="0 0 13 13"><ellipse cx="6.5" cy="6.5" rx="5.5" ry="3.5" stroke="#888" stroke-width="1.1"/><circle cx="6.5" cy="6.5" r="1.5" fill="#888"/></svg></div>
+      <div class="av-top">VE</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══════════════════════════════════════
+         SECTION: READY TO PAY
+    ══════════════════════════════════════ -->
+    <div class="section" id="sec-rtp">
+      <div class="bank-cards-row" id="rtp-cards"></div>
+      <div class="tabs-row">
+        <div class="tabs">
+          <div class="tab active" id="rtp-tab-bills" onclick="rtpTab('bills',this)">Bills <span class="tab-badge">43</span></div>
+          <div class="tab" id="rtp-tab-reimb" onclick="rtpTab('reimb',this)">Reimbursements <span class="tab-badge">32</span></div>
+        </div>
+        <div class="tab-right"><div class="dd-btn">Direct Pay <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="#888" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-left">
+          <span class="filter-label">Filters:</span>
+          <div class="chip" onclick="this.classList.toggle('active')">Overdue</div>
+          <div class="chip" onclick="this.classList.toggle('active')">Hide on-hold bills</div>
+          <div class="chip" onclick="this.classList.toggle('active')">High Priority</div>
+          <div class="chip" onclick="this.classList.toggle('active')">More Filters <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="#888" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </div>
+        <div class="sort-label">Sort By: Recommended ↓</div>
+      </div>
+      <div class="summary-row" id="rtp-summary"></div>
+      <div class="table-wrap"><table><thead id="rtp-thead"></thead><tbody id="rtp-tbody"></tbody></table></div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SECTION: IN QUEUE
+    ══════════════════════════════════════ -->
+    <div class="section" id="sec-inqueue">
+      <div class="bank-cards-row" id="iq-cards"></div>
+      <div class="tabs-row" style="margin-top:14px;">
+        <div class="tabs" id="iq-tabs"></div>
+      </div>
+      <div class="empty-state" style="padding-top:60px;">
+        <div class="empty-icon"><svg width="28" height="28" fill="none" viewBox="0 0 28 28"><circle cx="14" cy="14" r="11" stroke="#ccc" stroke-width="1.5"/><path d="M14 9v6l3 3" stroke="#ccc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="empty-title">No actions required</div>
+        <div class="empty-sub">As a payment creator, you don't have approval or authorisation actions on your own payments. Payments you create appear in Pending on Others.</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SECTION: PENDING ON OTHERS
+    ══════════════════════════════════════ -->
+    <div class="section active" id="sec-pending">
+      <div class="bank-cards-row" id="po-cards"></div>
+      <div class="tabs-row">
+        <div class="tabs" id="po-tabs"></div>
+        <div class="tab-right"><div class="dd-btn">Bill payment <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="#888" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-left"><span class="filter-label">Filters:</span><div class="chip">More Filters <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="#888" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+        <div class="sort-label">Sort By: Last Updated ↓</div>
+      </div>
+      <div class="summary-row" id="po-summary"></div>
+      <div class="table-wrap"><table><thead><tr><th class="col-sticky-left" style="min-width:180px;">Beneficiary</th><th style="min-width:140px;">Beneficiary account</th><th style="min-width:120px;">Payment amt</th><th style="min-width:130px;">Status</th><th style="min-width:160px;">Pending with</th><th style="min-width:120px;">Approval progress</th><th style="min-width:90px;">Pay on</th><th style="min-width:100px;">Uploaded at</th><th style="min-width:110px;">Pay method</th><th style="min-width:120px;">Mysa category</th><th style="min-width:130px;">Branch</th><th style="min-width:130px;">Department</th><th style="min-width:110px;">Cost centre</th><th style="min-width:110px;">Business unit</th><th style="min-width:100px;">Created by</th><th class="col-sticky-right" style="min-width:70px;">Actions</th></tr></thead><tbody id="po-tbody"></tbody></table></div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SECTION: ALL TRANSACTIONS
+    ══════════════════════════════════════ -->
+    <div class="section" id="sec-alltx">
+      <div class="bank-cards-row" id="at-cards"></div>
+      <div class="tabs-row">
+        <div class="tabs">
+          <div class="tab active" id="at-tab-all" onclick="atTab('all',this)">All Transactions</div>
+          <div class="tab" id="at-tab-rej" onclick="atTab('rejected',this)">Rejected</div>
+        </div>
+        <div class="tab-right"><div class="dd-btn">Direct Pay <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="#888" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      </div>
+      <div class="filter-row" id="at-filter-row">
+        <div class="filter-left" id="at-filters"></div>
+        <div class="sort-label">Sort By: Recommended ↓</div>
+      </div>
+      <div class="summary-row" id="at-summary"></div>
+      <div class="table-wrap"><table><thead id="at-thead"></thead><tbody id="at-tbody"></tbody></table></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- SIDE OVERLAY -->
+<div class="side-overlay" id="sideOverlay" onclick="closePanel()"></div>
+
+<!-- SIDE PANEL (Pending on Others detail) -->
+<div class="side-panel" id="sidePanel">
+  <div class="sp-hdr">
+    <div class="sp-hdr-top">
+      <div class="sp-title-row"><div class="sp-av" id="spAv"></div><div><div class="sp-name" id="spName"></div></div></div>
+      <div class="sp-hdr-acts">
+        <div class="sp-btn"><svg width="13" height="13" fill="none" viewBox="0 0 13 13"><path d="M5 6.5a3 3 0 0 0 4.5.4l1.5-1.5a3 3 0 0 0-4.2-4.2L5.6 2.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M8 6.5a3 3 0 0 0-4.5-.4L2 7.6a3 3 0 0 0 4.2 4.2l1.1-1.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></div>
+        <div class="sp-btn"><svg width="13" height="13" fill="none" viewBox="0 0 13 13"><path d="M6.5 2v7M4 7l2.5 2.5L9 7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></div>
+        <div class="sp-close" onclick="closePanel()">&#x2715;</div>
+      </div>
+    </div>
+    <div class="sp-bank" id="spBank"></div>
+  </div>
+  <div class="sp-tabs-row"><div class="sp-tab active">Details</div><div class="sp-tab">Comments &amp; Docs</div></div>
+  <div class="sp-body">
+    <!-- Status card: high-level timeline only -->
+    <div class="sp-status-card">
+      <div class="sp-status-top"><span class="sp-status-pill">Pending Approval</span><button class="sp-view-bill"><svg width="12" height="12" fill="none" viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M3 4.5h6M3 6.5h6M3 8.5h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>View Bill</button></div>
+      <div id="spHighTl"></div>
+      <div id="spApproverPool" style="margin-top:10px;"></div>
+      <div class="tl-next"><div class="tl-next-lbl">Next step — Approval required</div><div class="tl-next-txt" id="spNext"></div></div>
+    </div>
+
+    <!-- Audit trail: separate card -->
+    <div class="sp-audit-card">
+      <div id="spAuditList" style="display:block;"></div>
+      <button onclick="toggleAudit()" id="spAuditToggle" style="background:none;border:none;cursor:pointer;font-size:11.5px;color:#16a34a;font-weight:500;display:flex;align-items:center;gap:4px;padding:6px 0 2px;font-family:inherit;">
+        <svg id="spAuditChevron" width="12" height="12" viewBox="0 0 12 12" fill="none" style="transition:transform 0.2s;"><path d="M3 5l3 3 3-3" stroke="#16a34a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="spAuditToggleTxt">Show less</span>
+      </button>
+    </div>
+
+    <div class="sp-sec-title">Summary</div>
+    <div class="sp-sum-card">
+      <div class="sp-amt-lbl">Amount to be paid</div>
+      <div class="sp-amt-val" id="spAmt"></div>
+      <div class="sp-grid" id="spGrid"></div>
+    </div>
+
+    <div class="sp-sec-title">Bill details</div>
+    <div id="spBillDetails"></div>
+  </div>
+  <div class="sp-footer"><button class="sp-rej-btn" onclick="openRejectFromPanel()">Reject</button></div>
+</div>
+
+<!-- REJECT MODAL -->
+<div class="modal-bd" id="rejectModal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-ttl">Reject payment</div><button class="modal-x" onclick="closeModal()">&#x2715;</button></div>
+    <div class="modal-sub">This payment will be cancelled and moved to Rejected. The creator will be notified with your reason.</div>
+    <div class="modal-info" id="modalInfo"></div>
+    <div class="modal-lbl">Reason for rejection <span>*</span></div>
+    <textarea id="rejectReason" rows="3" placeholder="E.g. Incorrect beneficiary details, amount mismatch..."></textarea>
+    <div class="modal-ft"><button class="btn btn-c" onclick="closeModal()">Cancel</button><button class="btn btn-r" id="btnR" onclick="confirmReject()" disabled>Reject payment</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── DATA ── */
+const banks = [
+  { id:'b1', name:'Yes A/C xx3333',  amount:'₹ 10,00,00,000.00', refreshed:'01 Sep 25, 11:55 AM' },
+  { id:'b2', name:'IDFC A/C xx0101', amount:'₹ 50,00,000.00',    refreshed:'08 Apr 26, 08:54 PM' },
+];
+
+const pendingPayments = [
+  { id:0, bankId:'b1', name:'Aurelia Enterprises', ini:'AE', bg:'#d4f0e0', fg:'#1a5c38', acc:'Yes A/C xx2508',   amt:'₹45,67,890.12',  raw:4567890.12, date:'17 May', uploadedAt:'15 May', payMethod:'SECURE', title:'Q1 Vendor Payment',       mode:'NEFT, Internal Transfer', branch:'Head Quarter', cat:'Ops',      po:'PO-2024-0091', bu:'Finance', cc:'OPS-001',  dept:'Operations',  next:'Any 1 Finance Controller (excluding creator) must approve. After approval, an Admin will authorise the payment.', isNew:true,  pendingWith:['Priya Nair','Rohan Mehta','Sanya Kapoor'], totalLevels:2, doneLevels:0, auditTrail:[{action:'Payment created',by:'You',time:'15 May, 10:22 AM',done:true}] },
+  { id:1, bankId:'b1', name:'Superbolt India',     ini:'SI', bg:'#fef3c7', fg:'#92400e', acc:'HDFC A/C xx7997',  amt:'₹12,34,567.89',  raw:1234567.89, date:'26 May', uploadedAt:'24 May', payMethod:'FAST',   title:'Infra Services Apr',       mode:'IMPS',                    branch:'Mumbai',       cat:'Infra',    po:'--',           bu:'Tech',    cc:'TECH-004', dept:'Engineering', next:'Any 1 Finance Controller or Admin (excluding creator) must approve. After approval, an Admin will authorise the payment.', isNew:false, pendingWith:['Amit Sharma'], totalLevels:1, doneLevels:0, auditTrail:[{action:'Payment created',by:'You',time:'24 May, 09:10 AM',done:true}] },
+  { id:2, bankId:'b1', name:'Vedant Vaibhav',      ini:'VV', bg:'#ede9fe', fg:'#5b21b6', acc:'Axis A/C xx7527',  amt:'₹98,76,543.21',  raw:9876543.21, date:'22 May', uploadedAt:'20 May', payMethod:'SECURE', title:'Consulting Retainer May',  mode:'RTGS',                    branch:'Delhi',        cat:'Legal',    po:'PO-2024-0088', bu:'Legal',   cc:'LEG-002',  dept:'Legal',       next:'Any 1 Finance Controller or Admin (excluding creator) must approve. After approval, an Admin will authorise the payment.', isNew:false, pendingWith:['Priya Nair','Kiran Rao'], totalLevels:3, doneLevels:1, auditTrail:[{action:'Level 1 approved',by:'Amit Sharma',time:'20 May, 03:45 PM',done:true},{action:'Payment created',by:'You',time:'20 May, 11:00 AM',done:true}] },
+  { id:3, bankId:'b1', name:'Mohit Rangaraju',     ini:'MR', bg:'#fee2e2', fg:'#991b1b', acc:'State A/C xx3713', amt:'₹29,10,133.00',  raw:2910133.00, date:'16 Mar', uploadedAt:'14 Mar', payMethod:'FAST',   title:'Contractor Settlement',    mode:'NEFT',                    branch:'Bangalore',    cat:'HR',       po:'--',           bu:'HR',      cc:'HR-007',   dept:'HR',          next:'Any 1 Finance Controller or Admin (excluding creator) must approve. After approval, an Admin will authorise the payment.', isNew:false, pendingWith:['Deepa Iyer','Rohan Mehta','Nikhil Das','Sanya Kapoor'], totalLevels:2, doneLevels:0, auditTrail:[{action:'Payment created',by:'You',time:'14 Mar, 02:30 PM',done:true}] },
+  { id:4, bankId:'b2', name:'TitanLock Solutions', ini:'TS', bg:'#e0f2fe', fg:'#075985', acc:'HDFC A/C xx2201',  amt:'₹15,00,000.00',  raw:1500000.00, date:'10 Apr', uploadedAt:'08 Apr', payMethod:'SECURE', title:'Security Services Q2',     mode:'NEFT',                    branch:'Head Quarter', cat:'Security', po:'PO-2025-0012', bu:'Admin',   cc:'ADM-003',  dept:'Admin',       next:'Any 1 Finance Controller or Admin (excluding creator) must approve. After approval, an Admin will authorise the payment.', isNew:false, pendingWith:['Amit Sharma','Priya Nair'], totalLevels:2, doneLevels:1, auditTrail:[{action:'Level 1 approved',by:'Kiran Rao',time:'08 Apr, 04:15 PM',done:true},{action:'Payment created',by:'You',time:'08 Apr, 10:00 AM',done:true}] },
+  { id:5, bankId:'b2', name:'UltraSecure Co.',     ini:'US', bg:'#fce7f3', fg:'#9d174d', acc:'Kotak A/C xx1601', amt:'₹8,50,000.00',   raw:850000.00,  date:'12 Apr', uploadedAt:'10 Apr', payMethod:'SECURE', title:'Software License Renewal', mode:'IMPS',                    branch:'Head Quarter', cat:'IT',       po:'PO-2025-0008', bu:'Tech',    cc:'TECH-001', dept:'Technology',  next:'Any 1 Finance Controller or Admin (excluding creator) must approve. After approval, an Admin will authorise the payment.', isNew:false, pendingWith:['Kiran Rao'], totalLevels:1, doneLevels:0, auditTrail:[{action:'Payment created',by:'You',time:'10 Apr, 08:45 AM',done:true}] },
+];
+
+const billsData = [
+  { vendor:'50SHADES',          id:'LIPL/24-25/05888', billAmt:'₹6,850.88',     dueAmt:'₹6,508.33',  dueDate:'15 May', payBy:'15 May', status:'Ready to pay',    priority:'High',   overdue:false },
+  { vendor:'Accord Power Conv.', id:'OCT202...',        billAmt:'₹3,776.00',     dueAmt:'₹3,701.00',  dueDate:'08 Oct', payBy:'08 Oct', status:'Partially Paid',  priority:'Medium', overdue:false, onHold:true },
+  { vendor:'4444',              id:'WE244',             billAmt:'₹60.44',        dueAmt:'₹51.40',     dueDate:'15 Oct', payBy:'16 Oct', status:'Partially Paid',  priority:'Medium', overdue:false },
+  { vendor:'50SHADES',          id:'HCIN/K/2425/2797',  billAmt:'₹58,795.00',    dueAmt:'₹58,795.00', dueDate:'24 Oct', payBy:'24 Oct', status:'Ready to pay',    priority:'Medium', overdue:false },
+  { vendor:'AMBICA TRADING CO.',id:'HCIN/K/2425/2797876',billAmt:'₹65,800.00',  dueAmt:'₹65,800.00', dueDate:'25 Oct', payBy:'25 Oct', status:'Ready to pay',    priority:'Medium', overdue:false },
+  { vendor:'Active Carbon India',id:'DC240000001189',   billAmt:'₹23,39,127.18', dueAmt:'₹22,92,344.64',dueDate:'02 Nov', payBy:'02 Nov', status:'Ready to pay', priority:'Medium', overdue:false },
+  { vendor:'91social Software', id:'YUV/25-26/0723',    billAmt:'₹1,31,486.00',  dueAmt:'₹1,29,257.42',dueDate:'29 Nov', payBy:'29 Nov', status:'Ready to pay',  priority:'Medium', overdue:false, msme:true },
+  { vendor:'91social Software', id:'NGP/7944/23-24',    billAmt:'₹1,06,666.18',  dueAmt:'₹1,06,665.18',dueDate:'29 Nov', payBy:'29 Nov', status:'Partially Paid', priority:'Medium', overdue:false, msme:true },
+  { vendor:'91social Software', id:'022/2024-25',       billAmt:'₹5,619.00',     dueAmt:'₹5,619.00',  dueDate:'30 Nov', payBy:'30 Nov', status:'Ready to pay',    priority:'Medium', overdue:false, msme:true },
+  { vendor:'50SHADES',          id:'DC24000118945',     billAmt:'₹23,39,127.18', dueAmt:'₹17,92,343.64',dueDate:'16 Dec', payBy:'16 Dec', status:'Partially Paid', priority:'High',  overdue:false },
+];
+
+const reimbData = [
+  { emp:'Swati',    vendor:'Lipi International Pvt. Ltd.',    id:'TEST-26-1055',       billAmt:'₹39.84',     dueAmt:'₹39.84',  dueDate:'14 Feb', payBy:'02 Feb' },
+  { emp:'Prince',   vendor:'abcdedf',                         id:'TEST-12-22556618',   billAmt:'₹1,000.00',  dueAmt:'₹380.00', dueDate:'14 Feb', payBy:'14 Feb' },
+  { emp:'Sajitha',  vendor:'Amazon Seller Services Priva...', id:'IN-28672760',        billAmt:'₹378.72',    dueAmt:'₹378.72', dueDate:'30 Mar', payBy:'02 Mar' },
+  { emp:'Prince',   vendor:'aASD',                            id:'test',               billAmt:'₹10,00,000.00',dueAmt:'₹3,80,000.00',dueDate:'16 Mar',payBy:'16 Mar' },
+  { emp:'Divyang',  vendor:'ADONMO PRIVATE LIMITED',          id:'FY/2024-25/6358',    billAmt:'₹33,630.00', dueAmt:'₹30,267.00',dueDate:'18 Mar',payBy:'18 Mar' },
+  { emp:'Divyang',  vendor:'91social Software Pvt Ltd',       id:'KAGE00662887',       billAmt:'₹1,53,676.00',dueAmt:'₹12.00', dueDate:'18 Mar', payBy:'18 Mar' },
+  { emp:'Ashutosh', vendor:'aASD',                            id:'0709175032000028',   billAmt:'₹156.36',    dueAmt:'₹155.36', dueDate:'23 Mar', payBy:'23 Mar' },
+  { emp:'bhhbhh',   vendor:'Rapido',                          id:'3456',               billAmt:'₹750.00',    dueAmt:'₹750.00', dueDate:'25 Mar', payBy:'25 Mar' },
+];
+
+const allTxData = [
+  { name:'aASD',              ini:'AA', bg:'#f1f5f9', fg:'#475569', acc:'State A/C xx3990', amt:'₹10.00',         bill:false, status:'Success', authOn:'08 Apr', authBy:'QA_Admin',     title:'1234567890asdfghjk' },
+  { name:'91social Software', ini:'9S', bg:'#dbeafe', fg:'#1e3a5f', acc:'IDFC A/C xx8699',  amt:'₹1,000.00',      bill:false, status:'Success', authOn:'07 Apr', authBy:'QA_Admin',     title:'Test123',            msme:true },
+  { name:'91social Software', ini:'9S', bg:'#dbeafe', fg:'#1e3a5f', acc:'HDFC A/C xx5467',  amt:'₹1,00,94,300.00',bill:true,  status:'Success', authOn:'07 Apr', authBy:'QA_Admin',     title:'Bill narration',     msme:true },
+  { name:'Anandhu 23456',     ini:'A2', bg:'#d4f0e0', fg:'#1a5c38', acc:'State A/C xx7865', amt:'₹12.00',         bill:true,  status:'Success', authOn:'07 Apr', authBy:'QA_Admin',     title:'Best title ever' },
+  { name:'91social Software', ini:'9S', bg:'#dbeafe', fg:'#1e3a5f', acc:'HDFC A/C xx5467',  amt:'₹738.87',        bill:true,  status:'Success', authOn:'07 Apr', authBy:'QA_Admin',     title:'Google Workspace',   msme:true },
+  { name:'Active Carbon India',ini:'AC',bg:'#fef3c7', fg:'#78350f', acc:'State A/C xx8978', amt:'₹539.29',        bill:true,  status:'Success', authOn:'07 Apr', authBy:'QA_Admin',     title:'Third Wave Coffee' },
+  { name:'91social Software', ini:'9S', bg:'#dbeafe', fg:'#1e3a5f', acc:'HDFC A/C xx5467',  amt:'₹26,652.56',     bill:true,  status:'Success', authOn:'06 Apr', authBy:'suhani1',      title:'Acrylic Laminate',   msme:true },
+  { name:'Gowri',             ini:'GO', bg:'#f3e8ff', fg:'#6b21a8', acc:'Yes A/C xx3514',   amt:'₹100.00',        bill:false, status:'Success', authOn:'06 Apr', authBy:'SRIK',         title:'test100' },
+];
+
+const rejectedData = [
+  { name:'Seema Test',        ini:'ST', bg:'#f1f5f9', fg:'#475569', acc:'Yes A/C xx3514',   amt:'₹7,434.00',    bill:true,  status:'Rejected', authOn:'--', authBy:'--', title:'Software Service Support Charges' },
+  { name:'91social Software', ini:'9S', bg:'#dbeafe', fg:'#1e3a5f', acc:'HDFC A/C xx5467',  amt:'₹2,07,760.00', bill:true,  status:'Rejected', authOn:'--', authBy:'--', title:'Suma Sreedhar s Rent for Dec 2024', msme:true },
+  { name:'50SHADES',          ini:'50', bg:'#fef9c3', fg:'#713f12', acc:'Yes A/C xx3232',   amt:'₹5,413.52',    bill:true,  status:'Rejected', authOn:'--', authBy:'--', title:'Edge CSB Bank Card payment' },
+  { name:'ss22',              ini:'SS', bg:'#f1f5f9', fg:'#475569', acc:'HDFC A/C xx4567',  amt:'₹735.00',      bill:true,  status:'Rejected', authOn:'--', authBy:'--', title:'Best title ever' },
+  { name:'Gowri',             ini:'GO', bg:'#f3e8ff', fg:'#6b21a8', acc:'Yes A/C xx3514',   amt:'₹23.00',       bill:false, status:'Rejected', authOn:'--', authBy:'--', title:'twenty three' },
+  { name:'50SHADES',          ini:'50', bg:'#fef9c3', fg:'#713f12', acc:'Yes A/C xx3232',   amt:'₹6,508.33',    bill:true,  status:'Rejected', authOn:'--', authBy:'--', title:'Packaging Materials Mar25' },
+  { name:'MK',                ini:'MK', bg:'#fee2e2', fg:'#991b1b', acc:'HDFC A/C xx5678',  amt:'₹222.00',      bill:false, status:'Rejected', authOn:'--', authBy:'--', title:'jhjhj' },
+  { name:'anandhu',           ini:'AN', bg:'#d4f0e0', fg:'#1a5c38', acc:'South A/C xx1672', amt:'₹5,999.40',    bill:true,  status:'Rejected', authOn:'--', authBy:'--', title:'Unknown line item' },
+];
+
+/* ── STATE ── */
+let curSection = 'pending';
+let selBank = 'b1';
+let rejectId = null, panelId = null;
+let visIds = pendingPayments.map(p=>p.id);
+let curAtTab = 'all';
+let curRtpTab = 'bills';
+
+/* ── HELPERS ── */
+const byId = id => pendingPayments.find(p=>p.id===id);
+const getVis = () => pendingPayments.filter(p=>p.bankId===selBank && visIds.includes(p.id));
+const cntBank = bid => pendingPayments.filter(p=>p.bankId===bid && visIds.includes(p.id)).length;
+
+function bankCardsHTML(selId) {
+  return banks.map(b=>`
+    <div class="bank-card ${b.id===selId?'selected':''}" onclick="selBankFn('${b.id}')">
+      <div class="bank-card-top">
+        <div class="check-circle ${b.id===selId?'on':''}">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 2.5" stroke="${b.id===selId?'#fff':'#ccc'}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <span class="bank-card-name">${b.name}</span>
+        <button class="copy-btn" onclick="event.stopPropagation();showToast('Account number copied')"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="3" width="7" height="8" rx="1" stroke="#888" stroke-width="1"/><rect x="4" y="1" width="7" height="8" rx="1" stroke="#888" stroke-width="1"/></svg></button>
+      </div>
+      <div class="bank-card-amount">${b.amount}</div>
+      <div class="bank-card-refresh"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M8.5 5A3.5 3.5 0 1 1 5 1.5" stroke="#bbb" stroke-width="1" stroke-linecap="round"/><path d="M8.5 1.5v3H5.5" stroke="#bbb" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>${b.refreshed}</div>
+    </div>`).join('');
+}
+
+function docIcon(show) {
+  if (!show) return '<span style="color:#ccc;">—</span>';
+  return `<div class="doc-ic"><svg width="13" height="13" fill="none" viewBox="0 0 13 13"><rect x="1" y="1" width="11" height="11" rx="1.5" stroke="#16a34a" stroke-width="1.1"/><path d="M3.5 5h6M3.5 7h6M3.5 9h4" stroke="#16a34a" stroke-width="1.1" stroke-linecap="round"/></svg></div>`;
+}
+
+/* ── SECTION SWITCHING ── */
+function showSection(name) {
+  curSection = name;
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item.sub').forEach(n=>n.classList.remove('active'));
+  document.getElementById('sub-'+name).classList.add('active');
+  const titles = { rtp:'Payments / Ready to Pay', inqueue:'Payments / In Queue', pending:'Payments / Pending on Others', alltx:'Payments / All Transactions' };
+  document.getElementById('pageTitle').textContent = titles[name] || 'Payments';
+  closePanel();
+  if(name==='rtp') renderRTP();
+  if(name==='inqueue') renderIQ();
+  if(name==='pending') renderPO();
+  if(name==='alltx') renderAT();
+}
+
+function navTo(s) { showToast('Navigating to '+s+'...'); }
+
+/* ── READY TO PAY ── */
+function rtpTab(tab, el) {
+  curRtpTab = tab;
+  document.querySelectorAll('.tab[id^="rtp-tab"]').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderRTPTable();
+}
+
+function renderRTP() {
+  document.getElementById('rtp-cards').innerHTML = bankCardsHTML(selBank);
+  renderRTPTable();
+}
+
+function renderRTPTable() {
+  if (curRtpTab==='bills') {
+    document.getElementById('rtp-summary').innerHTML = `
+      <div class="summary-item"><div class="sum-label">Total count</div><div class="sum-value">43</div></div>
+      <div class="summary-item"><div class="sum-label amber">Total Bill Amount</div><div class="sum-value">₹ 1,64,96,691.62</div></div>
+      <div class="summary-item"><div class="sum-label green">Total Due Amount</div><div class="sum-value">₹ 1,41,29,314.03</div></div>`;
+    document.getElementById('rtp-thead').innerHTML = `<tr><th style="width:28px;"><input type="checkbox" style="width:14px;height:14px;"></th><th>Vendor</th><th>ID</th><th>Bill</th><th>Bill amount</th><th>Due amount</th><th>Due date</th><th>Pay by date</th><th>Status</th><th>Priority</th><th>Actions</th></tr>`;
+    document.getElementById('rtp-tbody').innerHTML = billsData.map(b=>`
+      <tr>
+        <td><input type="checkbox" style="width:14px;height:14px;"></td>
+        <td><div class="bene-cell"><div class="av-sm" style="background:#f1f5f9;color:#475569;font-size:9px;">${b.vendor.slice(0,2).toUpperCase()}</div><span class="bene-name">${b.vendor}</span>${b.msme?'<span class="tag-badge">MSME</span>':''}</div></td>
+        <td style="color:#555;font-size:12px;">${b.id}${b.onHold?'<span class="pill pill-amber" style="margin-left:6px;font-size:10px;padding:2px 7px;">On Hold</span>':''}</td>
+        <td>${docIcon(true)}</td>
+        <td style="font-weight:500;color:#1a1a1a;">${b.billAmt}</td>
+        <td style="font-weight:500;color:#1a1a1a;">${b.dueAmt}</td>
+        <td style="color:${b.dueDate.includes('Feb')||b.dueDate.includes('Oct')?'#dc2626':'#888'};">${b.dueDate}</td>
+        <td style="color:#888;text-decoration:underline;cursor:pointer;">${b.payBy}</td>
+        <td><span class="pill ${b.status==='Ready to pay'?'pill-blue':'pill-purple'}">${b.status}</span></td>
+        <td style="color:#888;">${b.priority}</td>
+        <td><div class="act-cell"><span class="dots">···</span><button class="green-btn"><svg width="10" height="10" fill="none" viewBox="0 0 10 10"><path d="M3 2l4 3-4 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></td>
+      </tr>`).join('');
+  } else {
+    document.getElementById('rtp-summary').innerHTML = `
+      <div class="summary-item"><div class="sum-label">Total count</div><div class="sum-value">32</div></div>
+      <div class="summary-item"><div class="sum-label amber">Total Reimbursement Amount</div><div class="sum-value">₹ 18,02,854.57</div></div>
+      <div class="summary-item"><div class="sum-label green">Total Due Amount</div><div class="sum-value">₹ 9,64,511.13</div></div>`;
+    document.getElementById('rtp-thead').innerHTML = `<tr><th style="width:28px;"><input type="checkbox" style="width:14px;height:14px;"></th><th>Beneficiary</th><th>Vendor</th><th>ID</th><th>Bill</th><th>Bill amount</th><th>Due amount</th><th>Due date</th><th>Pay by date</th><th>Actions</th></tr>`;
+    document.getElementById('rtp-tbody').innerHTML = reimbData.map(r=>`
+      <tr>
+        <td><input type="checkbox" style="width:14px;height:14px;"></td>
+        <td><div class="bene-cell"><div class="av-sm" style="background:#f1f5f9;color:#475569;">${r.emp.slice(0,2).toUpperCase()}</div><span class="bene-name">${r.emp}</span></div></td>
+        <td><div class="bene-cell"><div class="av-sm" style="background:#e8f5e9;color:#1a5c38;font-size:9px;">${r.vendor.slice(0,2).toUpperCase()}</div><span style="font-size:12px;color:#555;">${r.vendor}</span></div></td>
+        <td style="color:#555;font-size:12px;">${r.id}</td>
+        <td>${docIcon(true)}</td>
+        <td style="font-weight:500;color:#1a1a1a;">${r.billAmt}</td>
+        <td style="font-weight:500;color:#1a1a1a;">${r.dueAmt}</td>
+        <td style="color:#dc2626;">${r.dueDate}</td>
+        <td style="color:#888;text-decoration:underline;cursor:pointer;">${r.payBy}</td>
+        <td><div class="act-cell"><span class="dots">···</span><button class="green-btn"><svg width="10" height="10" fill="none" viewBox="0 0 10 10"><path d="M3 2l4 3-4 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></td>
+      </tr>`).join('');
+  }
+}
+
+/* ── IN QUEUE ── */
+function renderIQ() {
+  document.getElementById('iq-cards').innerHTML = bankCardsHTML(selBank);
+  document.getElementById('iq-tabs').innerHTML = banks.map((b,i)=>`
+    <div class="tab ${i===0?'active':''}">${b.name} <span class="tab-badge">0</span></div>`).join('');
+}
+
+/* ── PENDING ON OTHERS ── */
+function renderPO() {
+  document.getElementById('po-cards').innerHTML = bankCardsHTML(selBank);
+  document.getElementById('po-tabs').innerHTML = banks.map(b=>`
+    <div class="tab ${b.id===selBank?'active':''}" onclick="selBankFn('${b.id}')">${b.name} <span class="tab-badge">${cntBank(b.id)}</span></div>`).join('');
+  const v = getVis();
+  const total = v.reduce((s,p)=>s+p.raw,0);
+  document.getElementById('po-summary').innerHTML = `
+    <div class="summary-item"><div class="sum-label">Total count</div><div class="sum-value">${v.length}</div></div>
+    <div class="summary-item"><div class="sum-label">Total value</div><div class="sum-value">₹ ${total.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>`;
+  const tb = document.getElementById('po-tbody');
+  if (!v.length) {
+    tb.innerHTML=`<tr><td colspan="7"><div class="empty-state"><div class="empty-icon"><svg width="28" height="28" fill="none" viewBox="0 0 28 28"><rect x="4" y="6" width="20" height="16" rx="2" stroke="#ccc" stroke-width="1.5"/><path d="M9 12h10M9 16h6" stroke="#ccc" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="empty-title">No payments pending on others</div><div class="empty-sub">Payments you create will show up here</div></div></td></tr>`;
+    return;
+  }
+  tb.innerHTML = v.map(p=>{
+    const first = p.pendingWith[0];
+    const extra = p.pendingWith.length - 1;
+    const allNames = p.pendingWith.join('<br>');
+    const pwHtml = `<div class="pw-cell">
+      <span class="pw-name">${first}</span>
+      ${extra > 0 ? `<span class="pw-more">+${extra}</span>` : ''}
+      ${p.pendingWith.length > 1 ? `<div class="pw-tooltip">${allNames}</div>` : ''}
+    </div>`;
+    const total = p.totalLevels;
+    const done = p.doneLevels;
+    const curr = done < total ? done : -1;
+    let dots = '';
+    for(let i=0;i<total;i++){
+      if(i<done) dots+=`<div class="ap-dot done"></div>`;
+      else if(i===curr) dots+=`<div class="ap-dot curr"></div>`;
+      else dots+=`<div class="ap-dot pend"></div>`;
+    }
+    const remaining = total - done;
+    const apLabel = remaining===0 ? 'Ready to authorise' : `L${done+1} of ${total}`;
+    const apHtml = `<div class="ap-cell"><div class="ap-dots">${dots}</div><span class="ap-label">${apLabel}</span></div>`;
+    return `
+    <tr class="${p.isNew?'new-row':''} ${panelId===p.id?'active-row':''}" onclick="openPanel(${p.id})">
+      <td class="col-sticky-left"><div class="bene-cell"><div class="av-sm" style="background:${p.bg};color:${p.fg};">${p.ini}</div><div><div class="bene-name">${p.name}${p.isNew?'<span class="new-badge">NEW</span>':''}</div><div class="bene-sub">Created by You</div></div><span class="row-hint">Open in side view</span></div></td>
+      <td style="color:#555;">${p.acc}</td>
+      <td style="color:#1a1a1a;font-weight:600;">${p.amt}</td>
+      <td><span class="pill pill-blue">Pending Approval</span></td>
+      <td>${pwHtml}</td>
+      <td>${apHtml}</td>
+      <td style="color:#888;">${p.date}</td>
+      <td style="color:#888;">${p.uploadedAt}</td>
+      <td><span style="display:inline-flex;align-items:center;background:${p.payMethod==='SECURE'?'#eff6ff':'#f0fdf4'};color:${p.payMethod==='SECURE'?'#1d4ed8':'#15803d'};border:1px solid ${p.payMethod==='SECURE'?'#bfdbfe':'#86efac'};padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">${p.payMethod}</span></td>
+      <td style="color:#555;">${p.cat}</td>
+      <td style="color:#555;">${p.branch}</td>
+      <td style="color:#555;">${p.dept}</td>
+      <td style="color:#555;">${p.cc}</td>
+      <td style="color:#555;">${p.bu}</td>
+      <td style="color:#888;">You</td>
+      <td class="col-sticky-right"><div class="act-cell" onclick="event.stopPropagation()"><button class="rib" onclick="openReject(${p.id},event)"><span class="rib-tip">Reject</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── ALL TRANSACTIONS ── */
+function atTab(tab, el) {
+  curAtTab = tab;
+  document.querySelectorAll('.tab[id^="at-tab"]').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderATTable();
+}
+
+function renderAT() {
+  document.getElementById('at-cards').innerHTML = bankCardsHTML(selBank);
+  renderATTable();
+}
+
+function renderATTable() {
+  if (curAtTab==='all') {
+    document.getElementById('at-filters').innerHTML = `
+      <span class="filter-label">Filters:</span>
+      <div class="chip" onclick="this.classList.toggle('active')">Processing</div>
+      <div class="chip" onclick="this.classList.toggle('active')">Failed</div>
+      <div class="chip" onclick="this.classList.toggle('active')">More Filters <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="#888" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
+    document.getElementById('at-summary').innerHTML = `
+      <div class="summary-item"><div class="sum-label">Total count</div><div class="sum-value">162</div></div>
+      <div class="summary-item"><div class="sum-label amber">Paid count</div><div class="sum-value">158</div></div>
+      <div class="summary-item"><div class="sum-label green">Paid amount</div><div class="sum-value">₹ 1,49,79,376.12</div></div>`;
+    document.getElementById('at-thead').innerHTML = `<tr><th style="width:28px;"><input type="checkbox" style="width:14px;height:14px;"></th><th>Beneficiary</th><th>Beneficiary account</th><th>Payment amt</th><th>Bill</th><th>Status</th><th>Authorized on</th><th>Authorised by</th><th>Title</th><th>Actions</th></tr>`;
+    document.getElementById('at-tbody').innerHTML = allTxData.map(r=>`
+      <tr>
+        <td><input type="checkbox" style="width:14px;height:14px;"></td>
+        <td><div class="bene-cell"><div class="av-sm" style="background:${r.bg};color:${r.fg};">${r.ini}</div><div class="bene-name">${r.name}${r.msme?'<span class="tag-badge">MSME</span>':''}</div></div></td>
+        <td style="color:#555;">${r.acc}</td>
+        <td style="font-weight:500;color:#1a1a1a;">${r.amt}</td>
+        <td>${docIcon(r.bill)}</td>
+        <td><span class="pill pill-green">${r.status}</span></td>
+        <td style="color:#888;">${r.authOn}</td>
+        <td style="color:#888;">${r.authBy}</td>
+        <td style="color:#555;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.title}</td>
+        <td><span class="dots">···</span></td>
+      </tr>`).join('');
+  } else {
+    document.getElementById('at-filters').innerHTML = `<span class="filter-label">Filters:</span><div class="chip">More Filters <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="#888" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
+    document.getElementById('at-summary').innerHTML = `<div class="summary-item"><div class="sum-label">Total count</div><div class="sum-value">1783</div></div>`;
+    document.getElementById('at-thead').innerHTML = `<tr><th style="width:28px;"><input type="checkbox" style="width:14px;height:14px;"></th><th>Beneficiary</th><th>Beneficiary account</th><th>Payment amt</th><th>Bill</th><th>Status</th><th>Authorized on</th><th>Authorised by</th><th>Title</th><th>Actions</th></tr>`;
+    document.getElementById('at-tbody').innerHTML = rejectedData.map(r=>`
+      <tr>
+        <td><input type="checkbox" style="width:14px;height:14px;"></td>
+        <td><div class="bene-cell"><div class="av-sm" style="background:${r.bg};color:${r.fg};">${r.ini}</div><div class="bene-name">${r.name}${r.msme?'<span class="tag-badge">MSME</span>':''}</div></div></td>
+        <td style="color:#555;">${r.acc}</td>
+        <td style="font-weight:500;color:#1a1a1a;">${r.amt}</td>
+        <td>${docIcon(r.bill)}</td>
+        <td><span class="pill-red">${r.status}</span></td>
+        <td style="color:#aaa;">${r.authOn}</td>
+        <td style="color:#aaa;">${r.authBy}</td>
+        <td style="color:#555;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.title}</td>
+        <td><span class="dots">···</span></td>
+      </tr>`).join('');
+  }
+}
+
+/* ── BANK SELECTION ── */
+function selBankFn(bid) {
+  selBank = bid;
+  closePanel();
+  if(curSection==='rtp') renderRTP();
+  if(curSection==='inqueue') renderIQ();
+  if(curSection==='pending') renderPO();
+  if(curSection==='alltx') renderAT();
+}
+
+/* ── SIDE PANEL ── */
+let auditOpen = true;
+function toggleAudit() {
+  auditOpen = !auditOpen;
+  document.getElementById('spAuditList').style.display = auditOpen ? 'block' : 'none';
+  document.getElementById('spAuditToggleTxt').textContent = auditOpen ? 'Show less' : 'Show more';
+  document.getElementById('spAuditChevron').style.transform = auditOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
+}
+
+function openPanel(id) {
+  const p = byId(id); panelId = id; auditOpen = true;
+  document.getElementById('spAv').style.cssText=`background:${p.bg};color:${p.fg};`;
+  document.getElementById('spAv').textContent=p.ini;
+  document.getElementById('spName').textContent=p.name;
+  document.getElementById('spBank').innerHTML=`<div class="sp-verified"><svg width="8" height="8" fill="none" viewBox="0 0 8 8"><path d="M1.5 4l2 2 3-3" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>${p.acc}`;
+  document.getElementById('spNext').textContent=p.next;
+  document.getElementById('spAmt').textContent=p.amt;
+  document.getElementById('spAuditChevron').style.transform='rotate(0deg)';
+  document.getElementById('spAuditToggleTxt').textContent='Show less';
+
+  // ── High-level timeline — 4 fixed steps ──
+  const total = p.totalLevels;
+  const done = p.doneLevels;
+  const approvalDone = done >= total;
+  const approvalCurr = !approvalDone;
+  const approvalSub = '(' + done + '/' + total + ')';
+  const checkSvg = `<svg width="8" height="8" fill="none" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 2.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const currDot = `<div style="width:6px;height:6px;border-radius:50%;background:#2563eb;"></div>`;
+  const tlSteps = [
+    { lbl:'Created',       sub:p.createdBy||'You',   dot:'done' },
+    { lbl:'Approval',      sub:approvalSub,           dot: approvalDone ? 'done' : 'curr' },
+    { lbl:'Authorisation', sub: approvalDone ? 'Next' : 'Awaiting', dot: approvalDone ? 'curr' : '' },
+    { lbl:'Success',       sub:'',                    dot:'' },
+  ];
+  let tlHtml = '<div class="hl-tl">';
+  tlSteps.forEach((s,i)=>{
+    const inner = s.dot==='done' ? checkSvg : s.dot==='curr' ? currDot : '';
+    const dotCls = s.dot==='done'?'done':s.dot==='curr'?'curr':'';
+    const lblCls = s.dot==='done'?'done':s.dot==='curr'?'curr':'';
+    tlHtml += `<div class="hl-step"><div class="hl-dot ${dotCls}">${inner}</div><div class="hl-lbl ${lblCls}">${s.lbl}</div><div class="hl-sub">${s.sub}</div></div>`;
+    if(i<tlSteps.length-1){
+      const connDone = (i===0) || (i===1 && approvalDone);
+      tlHtml += `<div class="hl-conn ${connDone?'done':'pend'}"></div>`;
+    }
+  });
+  tlHtml += '</div>';
+  document.getElementById('spHighTl').innerHTML = tlHtml;
+
+  // ── Approver pool ──
+  const levelLabel = done < total ? `Level ${done+1}` : 'Authorisation';
+  document.getElementById('spApproverPool').innerHTML = `
+    <div class="pool-row">
+      <span class="pool-lbl">${levelLabel} from</span>
+    </div>
+    <div class="pool-row" style="margin-top:3px;">
+      <div style="width:16px;height:16px;border-radius:50%;border:1.5px solid #d0d0d0;flex-shrink:0;margin-top:1px;"></div>
+      <span class="pool-names">Any 1 of: ${p.pendingWith.join(', ')}</span>
+    </div>`;
+
+  // ── Audit trail ──
+  document.getElementById('spAuditList').style.display='block';
+  document.getElementById('spAuditList').innerHTML = p.auditTrail.map(a=>`
+    <div class="audit-item">
+      <div class="audit-dot"><svg width="9" height="9" fill="none" viewBox="0 0 9 9"><path d="M1.5 4.5l2.5 2.5 3.5-3.5" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="audit-content">
+        <div class="audit-action">${a.action} <svg width="12" height="12" fill="none" viewBox="0 0 12 12" style="vertical-align:middle;"><circle cx="6" cy="6" r="5" fill="#16a34a"/><path d="M3.5 6l2 2 3-3" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="audit-by">by ${a.by}</div>
+        <div class="audit-time">${a.time}</div>
+      </div>
+    </div>`).join('');
+
+  // ── Summary grid ──
+  const bn = banks.find(b=>b.id===p.bankId).name;
+  document.getElementById('spGrid').innerHTML=`
+    <div><div class="sp-fl">Payment title</div><div class="sp-fv">${p.title}</div></div>
+    <div><div class="sp-fl">Beneficiary</div><div class="sp-fv"><a href="#">${p.name}</a></div></div>
+    <div><div class="sp-fl">From</div><div class="sp-fv bank-tag"><div class="bank-ic">B</div>${bn}</div></div>
+    <div><div class="sp-fl">To</div><div class="sp-fv bank-tag"><div class="bank-ic">B</div>${p.acc}</div></div>
+    <div><div class="sp-fl">Transaction mode</div><div class="sp-fv">${p.mode}</div></div>
+    <div><div class="sp-fl">Pay on date</div><div class="sp-fv">${p.date}</div></div>
+    <div><div class="sp-fl">Location / Branch</div><div class="sp-fv">${p.branch}</div></div>
+    <div><div class="sp-fl">Mysa category</div><div class="sp-fv">${p.cat}</div></div>
+    <div><div class="sp-fl">PO number</div><div class="sp-fv">${p.po}</div></div>
+    <div><div class="sp-fl">Business unit</div><div class="sp-fv">${p.bu}</div></div>
+    <div><div class="sp-fl">Cost centre</div><div class="sp-fv">${p.cc}</div></div>
+    <div><div class="sp-fl">Department</div><div class="sp-fv">${p.dept}</div></div>
+    <div><div class="sp-fl">Payment method</div><div class="sp-fv">${p.payMethod}</div></div>
+    <div><div class="sp-fl">Uploaded at</div><div class="sp-fv">${p.uploadedAt}</div></div>`;
+
+  // ── Bill details ──
+  document.getElementById('spBillDetails').innerHTML=`
+    <div class="bill-det-card">
+      <div class="bill-det-hdr"><span>#Bill ID</span><span>Payment amt</span><span>Bill amt</span><span>Status</span></div>
+      <div class="bill-det-row">
+        <span style="color:#2563eb;cursor:pointer;">BI/${p.id+1}25-39</span>
+        <span>${p.amt}</span>
+        <span>${p.amt}</span>
+        <span><span style="background:#dbeafe;color:#1d4ed8;border-radius:12px;padding:2px 8px;font-size:10px;font-weight:600;">In Payment</span></span>
+      </div>
+    </div>`;
+
+  document.getElementById('sidePanel').classList.add('open');
+  document.getElementById('sideOverlay').classList.add('open');
+  renderPO();
+}
+function closePanel() {
+  panelId=null;
+  document.getElementById('sidePanel').classList.remove('open');
+  document.getElementById('sideOverlay').classList.remove('open');
+  if(curSection==='pending') renderPO();
+}
+function openRejectFromPanel() { if(panelId!==null) openReject(panelId,null); }
+
+/* ── REJECT MODAL ── */
+function openReject(id,e) {
+  if(e) e.stopPropagation();
+  rejectId=id;
+  const p=byId(id);
+  document.getElementById('modalInfo').innerHTML=`
+    <div class="modal-row"><span class="mk">Beneficiary</span><span class="mv">${p.name}</span></div>
+    <div class="modal-row"><span class="mk">Account</span><span class="mv">${p.acc}</span></div>
+    <div class="modal-row"><span class="mk">Amount</span><span class="mv">${p.amt}</span></div>
+    <div class="modal-row"><span class="mk">Pay on</span><span class="mv">${p.date}</span></div>`;
+  document.getElementById('rejectReason').value='';
+  document.getElementById('btnR').disabled=true;
+  document.getElementById('rejectModal').classList.add('open');
+  setTimeout(()=>document.getElementById('rejectReason').focus(),50);
+}
+function closeModal() { document.getElementById('rejectModal').classList.remove('open'); rejectId=null; }
+document.getElementById('rejectReason').addEventListener('input',function(){ document.getElementById('btnR').disabled=this.value.trim().length===0; });
+function confirmReject() {
+  const p=byId(rejectId);
+  visIds=visIds.filter(i=>i!==rejectId);
+  if(panelId===rejectId) closePanel();
+  closeModal(); renderPO();
+  showToast('Payment to '+p.name+' rejected — creator notified');
+}
+
+/* ── TOAST ── */
+let tt;
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.innerHTML=`<svg width="14" height="14" fill="none" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" stroke="#4ade80" stroke-width="1.2"/><path d="M4.5 7l2 2 3-3" stroke="#4ade80" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>${msg}`;
+  t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+document.getElementById('rejectModal').addEventListener('click',e=>{if(e.target===document.getElementById('rejectModal'))closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closePanel();}});
+
+/* ── INIT ── */
+renderPO();
+</script>
+</body>
+</html>
